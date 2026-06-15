@@ -2,6 +2,16 @@ cmake_minimum_required(VERSION 3.15)
 project(Webserver)
 
 
+
+option(ENABLE_ASAN "Enable Address Sanitizer for memory auditing" OFF)
+
+if(ENABLE_ASAN)
+    message(STATUS "AddressSanitizer is ENABLED. Performance will be degraded.")
+
+    add_compile_options(-fsanitize=address -g -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address)
+endif()
+
 set(SERVER_SOURCES
     src/socket.cpp
     src/server.cpp
