@@ -23,7 +23,7 @@ This engine is built natively for Linux environments and utilizes CMake for cros
 
 ### Compilation
 ```bash
-git clone [https://github.com/aswinganga-greenink/custom-webserver.com](https://github.com/aswinganga-greenink/custom-webserver.com)
+git clone [https://github.com/aswinganga-greenink/custom-webserver.git](https://github.com/aswinganga-greenink/custom-webserver.git)
 cd custom-webserver
 
 # Generate the build system
