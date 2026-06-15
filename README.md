@@ -23,8 +23,8 @@ This engine is built natively for Linux environments and utilizes CMake for cros
 
 ### Compilation
 ```bash
-git clone [https://github.com/YOUR_USERNAME/YOUR_REPO.git](https://github.com/YOUR_USERNAME/YOUR_REPO.git)
-cd YOUR_REPO
+git clone [https://github.com/aswinganga-greenink/custom-webserver.com](https://github.com/aswinganga-greenink/custom-webserver.com)
+cd custom-webserver
 
 # Generate the build system
 cmake -B build -DENABLE_ASAN=OFF
