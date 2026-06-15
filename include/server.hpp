@@ -3,6 +3,7 @@
 #include <iostream>
 #include "socket.hpp"
 #include "threadpool.hpp"
+#include <atomic>
 
 class Server{
     private:
@@ -15,5 +16,5 @@ class Server{
         Server(int port);
         ~Server();
 
-        void start_server();
+        void start_server(std::atomic<bool>& is_running);
 };
