@@ -1,19 +1,18 @@
-cmake_minimum_required(VERSION 4.3.1)
+cmake_minimum_required(VERSION 3.15)
 project(Webserver)
 
-add_library(Socket STATIC src/socket.cpp)
-target_include_directories(Socket PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_library(Server STATIC src/server.cpp)
-target_include_directories(Server PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(SERVER_SOURCES
+    src/socket.cpp
+    src/server.cpp
+    src/threadpool.cpp
+    src/httphandler.cpp
+    src/logger.cpp
+)
 
-add_library(ThreadPool STATIC src/threadpool.cpp)
-target_include_directories(ThreadPool PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_library(HttpHandler STATIC src/httphandler.cpp)
-target_include_directories(HttpHandler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-target_link_libraries(Server PUBLIC Socket ThreadPool HttpHandler)
+add_library(ServerEngine STATIC ${SERVER_SOURCES})
+target_include_directories(ServerEngine PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_executable(webserver src/main.cpp)
-target_link_libraries(webserver PRIVATE Server)
+
+target_link_libraries(webserver PRIVATE ServerEngine)

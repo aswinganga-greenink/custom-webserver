@@ -1,4 +1,5 @@
 #include "socket.hpp"
+#include "logger.hpp"
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <iostream>
@@ -37,20 +38,20 @@ void Socket::bind_sock(){
     set_content();
     
     if (bind(sock_fd, (struct sockaddr*)&server, sizeof(server)) < 0) {
-        std::cerr << "CRITICAL ERROR: Failed to bind to port " << port << "!" << std::endl;
-        std::cerr << "OS Reason: " << strerror(errno) << std::endl;
+        LOG_ERROR("CRITICAL ERROR: Failed to bind to port " + port + '!');
+        LOG_ERROR("OS Reason: " + std::string(strerror(errno)));
         exit(EXIT_FAILURE); 
     }
-    std::cout << "Successfully bound to port " << port << std::endl;
+    LOG_INFO("Successfully bound to port " + port);
 }
 
 void Socket::listen_sock(){
     if (listen(sock_fd, 5) < 0) {
-        std::cerr << "CRITICAL ERROR: Failed to listen on socket!" << std::endl;
-        std::cerr << "OS Reason: " << strerror(errno) << std::endl;
+        LOG_ERROR("CRITICAL ERROR: Failed to listen on socket!");
+        LOG_ERROR("OS Reason: " + std::string(strerror(errno)));
         exit(EXIT_FAILURE);
     }
-    std::cout << "Socket is actively listening..." << std::endl;
+    LOG_INFO("Socket is actively listening...");
 }
 
 int Socket::accept_sock(){

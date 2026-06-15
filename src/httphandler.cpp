@@ -1,4 +1,5 @@
 #include "httphandler.hpp"
+#include "logger.hpp"
 #include <unistd.h>
 #include <iostream>
 #include <fstream>
@@ -18,7 +19,7 @@ void HttpHandler::process_client(int client_fd){
 
     std::string requested_path = extract_path(raw_request);
 
-    std::cout<<"the client requested file: " << requested_path << std::endl;
+    LOG_INFO("Worker mapped route -> " + requested_path);
 
     std::string response = build_response(requested_path);
 
@@ -43,6 +44,8 @@ std::string HttpHandler::build_response(const std::string& filepath){
                "Connection: close\r\n\r\n" + 
                content;
     }
+
+    LOG_ERROR("404 Not Found -> " + filepath);
 
     return "HTTP/1.1 404 Not Found\r\n"
            "Content-Type: text/plain\r\n"

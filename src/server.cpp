@@ -5,21 +5,22 @@
 #include <unistd.h>
 #include <atomic>
 #include <errno.h>
+#include "logger.hpp"
 
 Server::Server(int port): port(port), sock(port), pool(4) {}
 
 Server::~Server(){
-    std::cout << "Have a nice day" << std::endl;
+    LOG_INFO("Have a nice day");
 }
 
 void Server::start_server(std::atomic<bool>& is_running){
-    std::cout<<"Starting server on port " << port << std::endl;
+    LOG_INFO("Starting server on port 8000");
 
     sock.bind_sock();
 
     sock.listen_sock();
 
-    std::cout << "Server is now running and waiting for connections." << std::endl;
+    LOG_INFO("Server is now running and waiting for connections.");
 
     while(is_running.load()){
         int current_client_fd = sock.accept_sock();
@@ -32,7 +33,7 @@ void Server::start_server(std::atomic<bool>& is_running){
         }
 
         pool.enqueue_task([current_client_fd](){
-            std::cout<< "Worker thread processing client FD: " << current_client_fd << std::endl;
+            LOG_INFO("Worker thread processing client FD: " + std::to_string(current_client_fd));
 
 
             HttpHandler handler;
@@ -40,6 +41,6 @@ void Server::start_server(std::atomic<bool>& is_running){
 
         });
 
-        std::cout << "Client connected!" << std::endl;
+        LOG_INFO("Client connected!");
     }
 }

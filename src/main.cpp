@@ -1,5 +1,6 @@
 #include <iostream>
 #include "server.hpp"
+#include "logger.hpp"
 #include <csignal>
 #include <atomic>
 #include <string.h>
@@ -7,7 +8,7 @@
 std::atomic<bool> server_running(true);
 
 void handle_signal(int signum) {
-    std::cout<<"\n[System] Caught signal " << signum << ". Initiating graceful shutdown..." << std::endl;
+    LOG_WARN("Caught system signal. Initiating shutdown...");
     server_running.store(false);
 }
 
@@ -22,14 +23,14 @@ int main(){
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
-    std::cout << "Booting web server..." << std::endl;
+    LOG_INFO("Booting up the server...");
 
     Server my_server_(8000);
 
     my_server_.start_server(server_running);
 
 
-    std::cout << "Server safely powered down. Goodbye!" << std::endl;
+    LOG_INFO("Server safely powered down. Goodbye!");
     return 0;
 
 }
