@@ -1,0 +1,26 @@
+name: C++ Core Build
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: sudo apt-get update && sudo apt-get install -y cmake g++ clang-format
+
+    - name: Enforce Code Formatting
+      run: find src include -name '*.cpp' -o -name '*.hpp' | xargs clang-format --dry-run -Werror
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DENABLE_ASAN=OFF
+
+    - name: Build Engine
+      run: cmake --build ${{github.workspace}}/build

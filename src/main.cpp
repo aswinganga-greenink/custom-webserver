@@ -1,9 +1,11 @@
-#include <iostream>
-#include "server.hpp"
-#include "logger.hpp"
-#include <csignal>
-#include <atomic>
 #include <string.h>
+
+#include <atomic>
+#include <csignal>
+#include <iostream>
+
+#include "logger.hpp"
+#include "server.hpp"
 
 std::atomic<bool> server_running(true);
 
@@ -12,8 +14,7 @@ void handle_signal(int signum) {
     server_running.store(false);
 }
 
-int main(){
-
+int main() {
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
@@ -29,8 +30,6 @@ int main(){
 
     my_server_.start_server(server_running);
 
-
     LOG_INFO("Server safely powered down. Goodbye!");
     return 0;
-
 }
