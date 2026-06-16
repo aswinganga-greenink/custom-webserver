@@ -1,5 +1,6 @@
 #include "socket.hpp"
 
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -59,4 +60,21 @@ int Socket::accept_sock() {
     socklen_t client_size = sizeof(client);
     int       client_fd   = accept(sock_fd, (struct sockaddr*)&client, &client_size);
     return client_fd;
+}
+
+void Socket::set_non_blocking(){
+    int flags = fcntl(sock_fd, F_GETFL, 0);
+    if (flags == -1){
+        LOG_ERROR("Failed to get socket flags");
+        return;
+    }
+
+    flags |= O_NONBLOCK;
+
+    if (fcntl(sock_fd, F_SETFL, flags) == -1){
+        LOG_ERROR("failed to set socket to non blocking");
+    }
+    else{
+        LOG_INFO("Socket succesfully configured as NON-BLOCKING");
+    }
 }

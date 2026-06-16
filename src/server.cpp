@@ -23,6 +23,8 @@ void Server::start_server(std::atomic<bool>& is_running) {
 
     LOG_INFO("Server is now running and waiting for connections.");
 
+    sock.set_non_blocking();
+
     while (is_running.load()) {
         int current_client_fd = sock.accept_sock();
 

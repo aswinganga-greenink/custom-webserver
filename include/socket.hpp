@@ -21,4 +21,5 @@ class Socket {
     void listen_sock();
     int  accept_sock();
     void connect_sock();
+    void set_non_blocking();
 };
