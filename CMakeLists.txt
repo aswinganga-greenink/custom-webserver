@@ -18,6 +18,7 @@ set(SERVER_SOURCES
     src/threadpool.cpp
     src/httphandler.cpp
     src/logger.cpp
+    src/epoll.cpp
 )
 
 add_library(ServerEngine STATIC ${SERVER_SOURCES})

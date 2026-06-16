@@ -6,6 +6,11 @@
 #include <iostream>
 
 std::mutex Logger::log_mutex;
+LogLevel Logger::current_threshold = LogLevel::INFO;
+
+void Logger::set_level(LogLevel level) {
+    current_threshold = level;
+}
 
 std::string Logger::get_timestamp() {
     auto        now   = std::chrono::system_clock::now();
@@ -22,7 +27,7 @@ std::string Logger::level_to_color(LogLevel level) {
     switch (level) {
         case LogLevel::INFO:
             return "\033[32m";
-        case LogLevel::WARNING:
+        case LogLevel::WARN:
             return "\033[33m";
         case LogLevel::ERROR:
             return "\033[31m";
@@ -37,7 +42,7 @@ std::string Logger::level_to_string(LogLevel level) {
     switch (level) {
         case LogLevel::INFO:
             return "INFO";
-        case LogLevel::WARNING:
+        case LogLevel::WARN:
             return "WARN";
         case LogLevel::ERROR:
             return "ERROR";
@@ -49,6 +54,11 @@ std::string Logger::level_to_string(LogLevel level) {
 }
 
 void Logger::log(LogLevel level, const std::string& message) {
+    
+    if (level < current_threshold) {
+        return; 
+    }
+
     std::lock_guard<std::mutex> lock(log_mutex);
 
     std::string color = level_to_color(level);

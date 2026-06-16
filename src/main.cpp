@@ -15,6 +15,8 @@ void handle_signal(int signum) {
 }
 
 int main() {
+
+    Logger::set_level(LogLevel::NONE);
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
