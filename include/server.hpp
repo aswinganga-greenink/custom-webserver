@@ -5,6 +5,7 @@
 
 #include "socket.hpp"
 #include "threadpool.hpp"
+#include "config.hpp"
 
 class Server {
    private:
@@ -12,8 +13,10 @@ class Server {
     Socket     sock;
     ThreadPool pool;
 
+    std::string document_root; 
+
    public:
-    Server(int port);
+    Server(const ConfigParser& config);
     ~Server();
 
     void start_server(std::atomic<bool>& is_running);

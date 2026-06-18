@@ -11,7 +11,12 @@
 #include "logger.hpp"
 #include "socket.hpp"
 
-Server::Server(int port) : port(port), sock(port), pool(4) {}
+Server::Server(const ConfigParser& config) 
+    : port(config.port), 
+      sock(config.port), 
+      pool(config.worker_threads),
+      document_root(config.document_root) {}
+
 
 Server::~Server() { LOG_INFO("Have a nice day"); }
 

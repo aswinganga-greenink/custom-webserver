@@ -16,7 +16,7 @@ void handle_signal(int signum) {
 
 int main() {
 
-    Logger::set_level(LogLevel::NONE);
+    Logger::set_level(LogLevel::DEBUG);
     struct sigaction sa;
 
     memset(&sa, 0, sizeof(sa));
@@ -28,7 +28,12 @@ int main() {
 
     LOG_INFO("Booting up the server...");
 
-    Server my_server_(8000);
+    ConfigParser config;
+    if (!config.load_from_file("server.conf")) {
+        LOG_WARN("Falling back to default compiled architecture.");
+    }
+
+    Server my_server_(config);
 
     my_server_.start_server(server_running);
 
