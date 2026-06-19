@@ -5,11 +5,13 @@
 #include <vector>
 #include <atomic>
 #include <iostream>
+#include <functional>
 
 #include "epoll.hpp"
 #include "httphandler.hpp"
 #include "logger.hpp"
 #include "socket.hpp"
+#include "connectionmanager.hpp"
 
 Server::Server(const ConfigParser& config) 
     : port(config.port), 
@@ -31,6 +33,7 @@ void Server::start_server(std::atomic<bool>& is_running) {
     LOG_INFO("Server is now running and waiting for connection.");
 
     Epoll event_loop;
+    ConnectionManager connection_manager;
     int server_fd = sock.get_fd();
 
     if(!event_loop.add_socket(server_fd, EPOLLIN)) {
@@ -41,7 +44,9 @@ void Server::start_server(std::atomic<bool>& is_running) {
     std::vector<struct epoll_event> ready_events(64);
 
     while(is_running.load()){
-        int num_events = event_loop.wait(ready_events, 1000);
+        int num_events = event_loop.wait(ready_events, 10);
+
+        connection_manager.close_expired_connections(event_loop);
 
         if (num_events < 0) {
             if (errno == EINTR) continue;
@@ -74,19 +79,23 @@ void Server::start_server(std::atomic<bool>& is_running) {
                     if(!event_loop.add_socket(client_fd, EPOLLIN | EPOLLONESHOT)){
                         close(client_fd);
                     }
+                    else{
+                        connection_manager.add_or_update_timer(client_fd);
+                    }
 
                 }
             }
 
             else {
-                event_loop.remove_socket(current_fd);
 
-                pool.enqueue_task([current_fd]() {
+                pool.enqueue_task([current_fd, &event_loop, &connection_manager]() {
                     LOG_INFO("Worker thread processing client fd: " + std::to_string(current_fd));
                     HttpHandler handler;
-                    handler.process_client(current_fd);
+                    handler.process_client(current_fd, [current_fd, &event_loop, &connection_manager](){
+                        connection_manager.add_or_update_timer(current_fd);
 
-                    close(current_fd);
+                        event_loop.modify_socket(current_fd, EPOLLIN | EPOLLONESHOT);
+                    });
                 });
             }
         }

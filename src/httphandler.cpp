@@ -9,7 +9,7 @@
 
 #include "logger.hpp"
 
-void HttpHandler::process_client(int client_fd) {
+void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) {
     char buffer[1024] = {0};
 
 
@@ -48,7 +48,7 @@ void HttpHandler::process_client(int client_fd) {
         close(client_fd);
     }
     else{
-        close(client_fd); // for now
+        on_complete();
     }
 }
 

@@ -6,6 +6,11 @@
 #include "socket.hpp"
 #include "threadpool.hpp"
 #include "config.hpp"
+#include "epoll.hpp"
+#include "httphandler.hpp"
+#include "connectionmanager.hpp"
+
+
 
 class Server {
    private:

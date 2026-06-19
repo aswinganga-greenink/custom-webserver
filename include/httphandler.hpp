@@ -1,10 +1,13 @@
 #pragma once
 #include <string>
 #include "httphandler.hpp"
+#include <functional>
 
 class HttpHandler {
    public:
-    void process_client(int client_fd);
+    using OnCompleteCallback = std::function<void()>;
+    void process_client(int client_fd, OnCompleteCallback on_complete);
+    
 
    private:
     std::string extract_path(const std::string& raw_request);

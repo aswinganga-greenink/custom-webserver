@@ -21,6 +21,7 @@ set(SERVER_SOURCES
     src/logger.cpp
     src/epoll.cpp
     src/config.cpp
+    src/connectionmanager.cpp
 )
 
 add_library(ServerEngine STATIC ${SERVER_SOURCES})
