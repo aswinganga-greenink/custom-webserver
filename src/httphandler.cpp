@@ -2,7 +2,7 @@
 #include "httprequest.hpp"
 
 #include <unistd.h>
-
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <sstream>
@@ -49,10 +49,35 @@ void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) 
 
 std::string HttpHandler::build_response(const std::string& uri, bool keep_alive) {
     
+    std::filesystem::path base_dir;
+
+    try{
+        base_dir = std::filesystem::canonical("public");
+    }catch(const std::exception& e){
+        LOG_ERROR("CRITICAL: 'public' directory is missing!");
+        return "HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n";
+    }
+
+    std::string safe_uri = uri;
+    if (!safe_uri.empty() && safe_uri[0] == '/') {
+        safe_uri = safe_uri.substr(1);
+    }
+    if (safe_uri.empty()) {
+        safe_uri = "index.html"; 
+    }
+
+    std::filesystem::path target_path = base_dir / safe_uri;
+    std::filesystem::path resolved_path = std::filesystem::weakly_canonical(target_path);
+
     std::string filepath = "public" + uri;
 
-    if (uri == "/") {
-        filepath = "public/index.html"; 
+    if (resolved_path.string().find(base_dir.string()) != 0) {
+        LOG_WARN("SECURITY ALERT: Directory traversal blocked -> " + uri);
+        std::string error_body = "<html><body><h1>403 Forbidden</h1></body></html>";
+        return "HTTP/1.1 403 Forbidden\r\n"
+               "Content-Type: text/html\r\n"
+               "Content-Length: " + std::to_string(error_body.length()) + "\r\n"
+               "Connection: close\r\n\r\n" + error_body;
     }
     
      std::ifstream file(filepath, std::ios::binary);
