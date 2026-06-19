@@ -17,6 +17,7 @@ set(SERVER_SOURCES
     src/server.cpp
     src/threadpool.cpp
     src/httphandler.cpp
+    src/httprequest.cpp
     src/logger.cpp
     src/epoll.cpp
     src/config.cpp
@@ -40,7 +41,7 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(server_tests tests/test_config.cpp)
+add_executable(server_tests tests/test_config.cpp tests/test_http_parser.cpp)
 
 target_sources(server_tests PRIVATE src/logger.cpp)
 target_link_libraries(server_tests gtest_main ServerEngine)

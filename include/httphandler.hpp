@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "httphandler.hpp"
 
 class HttpHandler {
    public:

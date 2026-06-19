@@ -1,4 +1,5 @@
 #include "httphandler.hpp"
+#include "httprequest.hpp"
 
 #include <unistd.h>
 
@@ -10,22 +11,45 @@
 
 void HttpHandler::process_client(int client_fd) {
     char buffer[1024] = {0};
-    read(client_fd, buffer, sizeof(buffer) - 1);
-    std::string raw_request(buffer);
 
+
+    int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
+    if(bytes_read <= 0){
+        close(client_fd);
+        return;
+    }
+
+
+    std::string raw_request(buffer);
     if (raw_request.empty()) {
         close(client_fd);
         return;
     }
 
-    std::string requested_path = extract_path(raw_request);
+    HttpRequest req;
+    if(!req.parse(raw_request)){
+        LOG_WARN("Recieved malinformed HTTP request. Dropping connection.");
+        close(client_fd);
+        return;
+    }
 
-    LOG_INFO("Worker mapped route -> " + requested_path);
+    LOG_INFO("Parsed " + req.method + " request for " + req.uri);
 
-    std::string response = build_response(requested_path);
+    bool keep_alive = false;
+    if(req.headers.count("Connection") && req.headers["Connection"] == "keep-alive"){
+        keep_alive = true;
+        LOG_DEBUG("Browser requested Keep-Alive on FD " + std::to_string(client_fd));
+    }
 
-    write(client_fd, response.c_str(), response.length());
-    close(client_fd);
+    std::string response = build_response(req.uri);
+    write(client_fd, response.c_str(), response.size());
+
+    if(!keep_alive){
+        close(client_fd);
+    }
+    else{
+        close(client_fd); // for now
+    }
 }
 
 std::string HttpHandler::build_response(const std::string& filepath) {
