@@ -91,10 +91,15 @@ void Server::start_server(std::atomic<bool>& is_running) {
                 pool.enqueue_task([current_fd, &event_loop, &connection_manager]() {
                     LOG_INFO("Worker thread processing client fd: " + std::to_string(current_fd));
                     HttpHandler handler;
-                    handler.process_client(current_fd, [current_fd, &event_loop, &connection_manager](){
-                        connection_manager.add_or_update_timer(current_fd);
-
-                        event_loop.modify_socket(current_fd, EPOLLIN | EPOLLONESHOT);
+                    handler.process_client(current_fd, [current_fd, &event_loop, &connection_manager](bool keep_alive){
+                        if (keep_alive) {
+                            connection_manager.add_or_update_timer(current_fd);
+                            event_loop.modify_socket(current_fd, EPOLLIN | EPOLLONESHOT);
+                        } else {
+                            connection_manager.remove_timer(current_fd);
+                            event_loop.remove_socket(current_fd);
+                            close(current_fd);
+                        }
                     });
                 });
             }

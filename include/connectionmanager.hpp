@@ -24,4 +24,5 @@ class ConnectionManager {
     public:
         void add_or_update_timer(int fd, size_t timeout_ms = 5000);
         void close_expired_connections(Epoll& epoll_engine);
+        void remove_timer(int fd); 
 };

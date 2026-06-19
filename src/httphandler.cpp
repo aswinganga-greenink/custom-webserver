@@ -15,21 +15,21 @@ void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) 
 
     int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
     if(bytes_read <= 0){
-        close(client_fd);
+        on_complete(false); 
         return;
     }
 
 
     std::string raw_request(buffer);
     if (raw_request.empty()) {
-        close(client_fd);
+        on_complete(false); 
         return;
     }
 
     HttpRequest req;
     if(!req.parse(raw_request)){
         LOG_WARN("Recieved malinformed HTTP request. Dropping connection.");
-        close(client_fd);
+        on_complete(false);
         return;
     }
 
@@ -41,44 +41,46 @@ void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) 
         LOG_DEBUG("Browser requested Keep-Alive on FD " + std::to_string(client_fd));
     }
 
-    std::string response = build_response(req.uri);
+    std::string response = build_response(req.uri, keep_alive);
     write(client_fd, response.c_str(), response.size());
 
-    if(!keep_alive){
-        close(client_fd);
-    }
-    else{
-        on_complete();
-    }
+    on_complete(keep_alive);
 }
 
-std::string HttpHandler::build_response(const std::string& filepath) {
-    std::ifstream file(filepath);
+std::string HttpHandler::build_response(const std::string& uri, bool keep_alive) {
+    
+    std::string filepath = "public" + uri;
 
-    if (file.good()) {
+    if (uri == "/") {
+        filepath = "public/index.html"; 
+    }
+    
+     std::ifstream file(filepath, std::ios::binary);
+
+    if (file.is_open()) {
         std::stringstream buffer_stream;
         buffer_stream << file.rdbuf();
         std::string content = buffer_stream.str();
 
         std::string mime_type = get_mime_type(filepath);
+        
+        std::string conn_header = keep_alive ? "keep-alive" : "close";
 
         return "HTTP/1.1 200 OK\r\n"
-               "Content-Type: " +
-               mime_type +
-               "\r\n"
-               "Content-Length: " +
-               std::to_string(content.length()) +
-               "\r\n"
-               "Connection: close\r\n\r\n" +
+               "Content-Type: " + mime_type + "\r\n"
+               "Content-Length: " + std::to_string(content.length()) + "\r\n"
+               "Connection: " + conn_header + "\r\n\r\n" + 
                content;
     }
 
     LOG_ERROR("404 Not Found -> " + filepath);
-
+    std::string error_body = "<html><body style='font-family:monospace;'><h1>404 File Not Found</h1></body></html>";
+    
     return "HTTP/1.1 404 Not Found\r\n"
-           "Content-Type: text/plain\r\n"
-           "Connection: close\r\n\r\n"
-           "404 - File Not Found";
+           "Content-Type: text/html\r\n"
+           "Content-Length: " + std::to_string(error_body.length()) + "\r\n"
+           "Connection: close\r\n\r\n" +
+           error_body;
 }
 
 std::string HttpHandler::extract_path(const std::string& raw_request) {
@@ -95,19 +97,13 @@ std::string HttpHandler::extract_path(const std::string& raw_request) {
 }
 
 std::string HttpHandler::get_mime_type(const std::string& filepath) {
-    size_t dot_pos = filepath.find_last_of(".");
-
-    if (dot_pos == std::string::npos) {
-        return "text/plain";
-    }
-
-    std::string ext = filepath.substr(dot_pos);
-
-    if (ext == ".html") return "text/html";
-    if (ext == ".css") return "text/css";
-    if (ext == ".js") return "application/javascript";
-    if (ext == ".png") return "image/png";
-    if (ext == ".jpg" || ext == ".jpeg") return "image/jpeg";
-
-    return "text/plain";
+    
+    if (filepath.find(".html") != std::string::npos) return "text/html";
+    if (filepath.find(".css") != std::string::npos) return "text/css";
+    if (filepath.find(".js") != std::string::npos) return "application/javascript";
+    if (filepath.find(".png") != std::string::npos) return "image/png";
+    if (filepath.find(".jpg") != std::string::npos || filepath.find(".jpeg") != std::string::npos) return "image/jpeg";
+    if (filepath.find(".ico") != std::string::npos) return "image/x-icon";
+    
+    return "application/octet-stream"; 
 }

@@ -40,3 +40,8 @@ void ConnectionManager::close_expired_connections(Epoll& epoll_engine){
         timer_queue.pop();
     }
 }
+
+void ConnectionManager::remove_timer(int fd) {
+    std::lock_guard<std::mutex> lock(manager_mutex);
+    active_connections.erase(fd);
+}
