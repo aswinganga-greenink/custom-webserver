@@ -1,33 +1,52 @@
-# High-Performance C++ Web Server Engine
+# Raven Engine
 
-[![C++ Core Build](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/build.yml/badge.svg)](https://github.com/YOUR_USERNAME/YOUR_REPO/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+![C++](https://img.shields.io/badge/C++-17-blue.svg)
+![Build](https://img.shields.io/badge/build-passing-success.svg)
+![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)
+![Docker](https://img.shields.io/badge/docker-ready-2496ED.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-A lightweight, multithreaded HTTP web server engineered from scratch in C++17. Designed with an Nginx-style architecture, this engine utilizes native POSIX sockets, a custom thread pool, and non-blocking I/O to safely serve static assets at high concurrency.
+**Raven Engine** is a high-performance, asynchronous HTTP server engineered from the ground up for native Linux environments. Built in C++17, it utilizes the POSIX `epoll` API and a custom thread-pool architecture to bypass blocking I/O, allowing it to handle concurrent client connections with near-zero latency.
 
-## Core Architecture
+## Features
 
-* **Custom Thread Pool:** Pre-allocates worker threads to handle incoming TCP connections concurrently without the overhead of spinning up new threads per request.
-* **Zero-Dependency HTTP Parser:** Dynamically extracts requested routing paths and determines accurate MIME types without relying on external libraries.
-* **Robust File I/O:** Safely streams binary and text files (HTML, CSS, JS, PNG, JPG) directly from the local filesystem to the network layer.
-* **Graceful Shutdown Integration:** Intercepts native Linux signals (`SIGINT`, `SIGTERM`) to cleanly finish active requests and prevent memory corruption.
-* **Thread-Safe Logging:** Utilizes `std::mutex` locking to prevent console interleaving and provide professional, timestamped access logs.
+* **Event-Driven Architecture:** Utilizes edge-triggered `epoll` to manage thousands of concurrent connections on a single thread.
+* **Asynchronous Thread Pool:** Incoming HTTP requests are dynamically dispatched to pre-allocated worker threads, preventing CPU blocking.
+* **Keep-Alive Reaper:** A dedicated background daemon manages a priority queue to gracefully drop stale TCP connections.
+* **Zero-Downtime Reboots:** Implements `SO_REUSEADDR` to prevent OS-level port locking during rapid deployments.
+* **Mathematical Path Armor:** Leverages `std::filesystem::weakly_canonical` to mathematically block malicious directory traversal (e.g., `../`) attacks.
+* **Macro-Driven Telemetry:** A high-performance logging engine that evaluates verbosity thresholds at compile-time to prevent string-allocation overhead in production.
 
-## Build & Installation
+---
 
-This engine is built natively for Linux environments and utilizes CMake for cross-platform build generation.
+## Architecture Overview
+
+Unlike traditional thread-per-connection web servers (like early Apache), Raven Engine mimics the architecture of Nginx:
+1. **The Event Loop:** The main thread sits entirely within `epoll_wait`, monitoring non-blocking sockets.
+2. **The Handoff:** Upon receiving an `EPOLLIN` event, the main thread reads the raw HTTP bytes and hands the payload to the Thread Pool.
+3. **The Workers:** Worker threads parse the HTTP request, resolve the file path, construct the MIME types, and stream the binary response back to the client.
+
+---
+
+## Getting Started
 
 ### Prerequisites
-* CMake (3.15 or higher)
-* A modern C++ compiler (g++ or clang) supporting C++17
+* **OS:** Linux (Ubuntu/Debian recommended)
+* **Compiler:** GCC 9+ or Clang 10+ (Must support C++17)
+* **Tools:** CMake 3.10+, Make
+* **Optional:** Docker & Docker Compose
 
-### Compilation
+### Deployment via Docker (Recommended)
+Raven Engine is packaged as a multi-stage, immutable Docker container. For active development, use volume mounts to enable live-reloading of HTML/CSS assets without recompiling the binary.
+
 ```bash
-git clone [https://github.com/aswinganga-greenink/custom-webserver.git](https://github.com/aswinganga-greenink/custom-webserver.git)
-cd custom-webserver
+# 1. Build the lightweight image
+docker build -t raven-engine:v1 .
 
-# Generate the build system
-cmake -B build -DENABLE_ASAN=OFF
-
-# Compile the engine
-cmake --build build
+# 2. Run with live volume mounts
+docker run -d \
+  --name raven-server \
+  -p 8080:8080 \
+  -v $(pwd)/server.conf:/app/server.conf \
+  -v $(pwd)/public:/app/public \
+  raven-engine:v1
