@@ -15,14 +15,11 @@ void handle_signal(int signum) {
 }
 
 int main() {
-
-    Logger::set_level(LogLevel::DEBUG);
+    Logger::set_level(LogLevel::INFO); 
+    
     struct sigaction sa;
-
     memset(&sa, 0, sizeof(sa));
-
     sa.sa_handler = handle_signal;
-
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
 
@@ -33,8 +30,10 @@ int main() {
         LOG_WARN("Falling back to default compiled architecture.");
     }
 
-    Server my_server_(config);
+    Logger::set_level(config.log_level);
+    LOG_INFO("Telemetry engine calibrated. Current Log Level: " + Logger::level_to_string(config.log_level));
 
+    Server my_server_(config);
     my_server_.start_server(server_running);
 
     LOG_INFO("Server safely powered down. Goodbye!");

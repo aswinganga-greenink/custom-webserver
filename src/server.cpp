@@ -88,9 +88,9 @@ void Server::start_server(std::atomic<bool>& is_running) {
 
             else {
 
-                pool.enqueue_task([current_fd, &event_loop, &connection_manager]() {
+                pool.enqueue_task([current_fd, &event_loop, &connection_manager, this]() {
                     LOG_INFO("Worker thread processing client fd: " + std::to_string(current_fd));
-                    HttpHandler handler;
+                    HttpHandler handler(this -> document_root);
                     handler.process_client(current_fd, [current_fd, &event_loop, &connection_manager](bool keep_alive){
                         if (keep_alive) {
                             connection_manager.add_or_update_timer(current_fd);

@@ -43,6 +43,15 @@ void ConfigParser::load_from_stream(std::istream& stream){
             else if( key == "document_root"){
                 document_root = value;
             }
+            else if( key == "log_level"){
+                std::transform(value.begin(), value.end(), value.begin(), ::toupper);
+                
+                if (value == "DEBUG") log_level = LogLevel::DEBUG;
+                else if (value == "INFO") log_level = LogLevel::INFO;
+                else if (value == "WARN") log_level = LogLevel::WARN;
+                else if (value == "ERROR") log_level = LogLevel::ERROR;
+                else if (value == "NONE") log_level = LogLevel::NONE;
+            }
         }
     }
 }

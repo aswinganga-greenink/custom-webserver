@@ -9,6 +9,8 @@
 
 #include "logger.hpp"
 
+HttpHandler::HttpHandler(const std::string& doc_root) : document_root(doc_root) {}
+
 void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) {
     char buffer[1024] = {0};
 
@@ -52,9 +54,9 @@ std::string HttpHandler::build_response(const std::string& uri, bool keep_alive)
     std::filesystem::path base_dir;
 
     try{
-        base_dir = std::filesystem::canonical("public");
+        base_dir = std::filesystem::canonical(document_root);
     }catch(const std::exception& e){
-        LOG_ERROR("CRITICAL: 'public' directory is missing!");
+        LOG_ERROR("CRITICAL: Document root directory : " + document_root + "directory is missing!");
         return "HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n";
     }
 
@@ -69,7 +71,6 @@ std::string HttpHandler::build_response(const std::string& uri, bool keep_alive)
     std::filesystem::path target_path = base_dir / safe_uri;
     std::filesystem::path resolved_path = std::filesystem::weakly_canonical(target_path);
 
-    std::string filepath = "public" + uri;
 
     if (resolved_path.string().find(base_dir.string()) != 0) {
         LOG_WARN("SECURITY ALERT: Directory traversal blocked -> " + uri);
@@ -80,14 +81,14 @@ std::string HttpHandler::build_response(const std::string& uri, bool keep_alive)
                "Connection: close\r\n\r\n" + error_body;
     }
     
-     std::ifstream file(filepath, std::ios::binary);
+    std::ifstream file(resolved_path, std::ios::binary);
 
     if (file.is_open()) {
         std::stringstream buffer_stream;
         buffer_stream << file.rdbuf();
         std::string content = buffer_stream.str();
 
-        std::string mime_type = get_mime_type(filepath);
+        std::string mime_type = get_mime_type(resolved_path.string());
         
         std::string conn_header = keep_alive ? "keep-alive" : "close";
 
@@ -98,7 +99,7 @@ std::string HttpHandler::build_response(const std::string& uri, bool keep_alive)
                content;
     }
 
-    LOG_ERROR("404 Not Found -> " + filepath);
+    LOG_ERROR("404 Not Found -> " + resolved_path.string());
     std::string error_body = "<html><body style='font-family:monospace;'><h1>404 File Not Found</h1></body></html>";
     
     return "HTTP/1.1 404 Not Found\r\n"

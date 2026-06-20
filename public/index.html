@@ -1,11 +1,227 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Domain Expansion</title>
-    <link rel="stylesheet" href="/style.css"> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raven Engine | 200 OK</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --text-main: #e0e0e0;
+            --accent: #00ff88;
+            --accent-dim: rgba(0, 255, 136, 0.2);
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            border-left: 4px solid var(--accent);
+            padding: 2rem 3rem;
+            background: linear-gradient(90deg, var(--accent-dim) 0%, transparent 100%);
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 1rem 0;
+            font-weight: normal;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: var(--accent-dim);
+            color: var(--accent);
+            padding: 0.2rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            border: 1px solid var(--accent);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 10px var(--accent-dim);
+        }
+
+        .pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+
+        p {
+            line-height: 1.6;
+            color: #a0a0a0;
+            margin-bottom: 0.5rem;
+        }
+
+        .terminal {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #000;
+            border: 1px solid #333;
+            color: var(--accent);
+            min-height: 80px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--accent);
+            vertical-align: middle;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Dynamic Routing Activated</h1>
-    <p>If this text is glowing, your C++ parser works perfectly.</p>
+
+    <div class="container">
+        <div class="status-badge"><span class="pulse"></span>SYSTEM ONLINE</div>
+        
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --text-main: #e0e0e0;
+            --accent: #00ff88;
+            --accent-dim: rgba(0, 255, 136, 0.2);
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            border-left: 4px solid var(--accent);
+            padding: 2rem 3rem;
+            background: linear-gradient(90deg, var(--accent-dim) 0%, transparent 100%);
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 1rem 0;
+            font-weight: normal;
+        }
+
+        .status-badge {
+            display: inline-block;
+            background-color: var(--accent-dim);
+            color: var(--accent);
+            padding: 0.2rem 0.8rem;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            border: 1px solid var(--accent);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 10px var(--accent-dim);
+        }
+
+        .pulse {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent);
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: blink 1.5s infinite;
+        }
+
+        p {
+            line-height: 1.6;
+            color: #a0a0a0;
+            margin-bottom: 0.5rem;
+        }
+
+        .terminal {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #000;
+            border: 1px solid #333;
+            color: var(--accent);
+            min-height: 80px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 10px;
+            height: 1.2em;
+            background-color: var(--accent);
+            vertical-align: middle;
+            animation: blink 1s step-end infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="status-badge"><span class="pulse"></span>SYSTEM ONLINE</div>
+        <h1>Raven C++ Engine V1.0</h1>
+        <p>If you see this page, the asynchronous C++ web server is successfully installed and working.</p>
+        <p>Worker threads are active. Epoll engine is tracking connections. Keep-Alive is armed.</p>
+        
+        <div class="terminal">
+            <span id="typewriter"></span><span class="cursor"></span>
+            <div id="uptime" style="margin-top: 10px; color: #888; font-size: 0.85rem;"></div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Typewriter Animation
+        const textToType = "> Initializing socket descriptors...\n> Bypassing blocking I/O...\n> HTTP/1.1 Engine Ready.";
+        const typeTarget = document.getElementById('typewriter');
+        let index = 0;
+
+        function typeWriter() {
+            if (index < textToType.length) {
+                if (textToType.charAt(index) === '\n') {
+                    typeTarget.innerHTML += '<br>';
+                } else {
+                    typeTarget.innerHTML += textToType.charAt(index);
+                }
+                index++;
+                setTimeout(typeWriter, Math.random() * 50 + 30);
+            }
+        }
+
+        // 2. Client-side JS processing test
+        const startTime = Date.now();
+        const uptimeTarget = document.getElementById('uptime');
+
+        setInterval(() => {
+            const diff = Math.floor((Date.now() - startTime) / 1000);
+            uptimeTarget.innerText = `Client Connection Uptime: ${diff}s`;
+        }, 1000);
+
+        // Boot
+        setTimeout(typeWriter, 500);
+    </script>
 </body>
 </html>

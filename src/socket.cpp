@@ -15,6 +15,18 @@
 Socket::Socket(int port) {
     this->port = port;
     sock_fd    = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sock_fd == -1) {
+        LOG_ERROR("Failed to create socket: " + std::string(strerror(errno)));
+        return;
+    }
+
+    int opt = 1;
+    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+        LOG_ERROR("setsockopt SO_REUSEADDR failed: " + std::string(strerror(errno)));
+    } else {
+        LOG_DEBUG("SO_REUSEADDR successfully applied to FD " + std::to_string(sock_fd));
+    }
 }
 
 Socket::Socket(Socket&& other) {
@@ -40,11 +52,11 @@ void Socket::bind_sock() {
     set_content();
 
     if (bind(sock_fd, (struct sockaddr*)&server, sizeof(server)) < 0) {
-        LOG_ERROR("CRITICAL ERROR: Failed to bind to port " + port + '!');
+        LOG_ERROR("CRITICAL ERROR: Failed to bind to port " + std::to_string(port) + "!");
         LOG_ERROR("OS Reason: " + std::string(strerror(errno)));
         exit(EXIT_FAILURE);
     }
-    LOG_INFO("Successfully bound to port " + port);
+    LOG_INFO("Successfully bound to port " + std::to_string(port));
 }
 
 void Socket::listen_sock() {
