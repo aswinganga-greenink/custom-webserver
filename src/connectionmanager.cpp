@@ -1,35 +1,35 @@
 #include "connectionmanager.hpp"
-#include "logger.hpp"
+
 #include <unistd.h>
 
-size_t ConnectionManager::get_current_time_ms(){
+#include "logger.hpp"
+
+size_t ConnectionManager::get_current_time_ms() {
     auto now = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(
-        now.time_since_epoch()
-    ).count();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
 }
 
-void ConnectionManager::add_or_update_timer(int fd, size_t timeout_ms){
+void ConnectionManager::add_or_update_timer(int fd, size_t timeout_ms) {
     std::lock_guard<std::mutex> lock(manager_mutex);
-    size_t expire_time = get_current_time_ms() + timeout_ms;
+    size_t                      expire_time = get_current_time_ms() + timeout_ms;
 
     active_connections[fd] = expire_time;
 
     timer_queue.push({fd, expire_time});
 }
 
-void ConnectionManager::close_expired_connections(Epoll& epoll_engine){
+void ConnectionManager::close_expired_connections(Epoll& epoll_engine) {
     std::lock_guard<std::mutex> lock(manager_mutex);
-    size_t current_time = get_current_time_ms();
+    size_t                      current_time = get_current_time_ms();
 
-    while(!timer_queue.empty()){
+    while (!timer_queue.empty()) {
         TimerNode top = timer_queue.top();
 
-        if (top.expiration_time > current_time){
+        if (top.expiration_time > current_time) {
             break;
         }
 
-        if(active_connections.count(top.fd) && active_connections[top.fd] == top.expiration_time){
+        if (active_connections.count(top.fd) && active_connections[top.fd] == top.expiration_time) {
             LOG_DEBUG("Keep-Alive timeout on FD " + std::to_string(top.fd) + ". Closing socket.");
 
             epoll_engine.remove_socket(top.fd);

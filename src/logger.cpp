@@ -6,11 +6,9 @@
 #include <iostream>
 
 std::mutex Logger::log_mutex;
-LogLevel Logger::current_threshold = LogLevel::INFO;
+LogLevel   Logger::current_threshold = LogLevel::INFO;
 
-void Logger::set_level(LogLevel level) {
-    current_threshold = level;
-}
+void Logger::set_level(LogLevel level) { current_threshold = level; }
 
 std::string Logger::get_timestamp() {
     auto        now   = std::chrono::system_clock::now();
@@ -54,9 +52,8 @@ std::string Logger::level_to_string(LogLevel level) {
 }
 
 void Logger::log(LogLevel level, const std::string& message) {
-    
     if (level < current_threshold) {
-        return; 
+        return;
     }
 
     std::lock_guard<std::mutex> lock(log_mutex);

@@ -1,8 +1,8 @@
 #include "socket.hpp"
 
-#include <fcntl.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -74,19 +74,18 @@ int Socket::accept_sock() {
     return client_fd;
 }
 
-void Socket::set_non_blocking(){
+void Socket::set_non_blocking() {
     int flags = fcntl(sock_fd, F_GETFL, 0);
-    if (flags == -1){
+    if (flags == -1) {
         LOG_ERROR("Failed to get socket flags");
         return;
     }
 
     flags |= O_NONBLOCK;
 
-    if (fcntl(sock_fd, F_SETFL, flags) == -1){
+    if (fcntl(sock_fd, F_SETFL, flags) == -1) {
         LOG_ERROR("failed to set socket to non blocking");
-    }
-    else{
+    } else {
         LOG_INFO("Socket succesfully configured as NON-BLOCKING");
     }
 }

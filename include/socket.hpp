@@ -16,7 +16,7 @@ class Socket {
     Socket(Socket&& other);
     Socket& operator=(const Socket& other) = delete;
 
-    int get_fd() const { return sock_fd; }
+    int  get_fd() const { return sock_fd; }
     void set_content();
     void bind_sock();
     void listen_sock();

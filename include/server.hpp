@@ -3,14 +3,12 @@
 #include <atomic>
 #include <iostream>
 
-#include "socket.hpp"
-#include "threadpool.hpp"
 #include "config.hpp"
+#include "connectionmanager.hpp"
 #include "epoll.hpp"
 #include "httphandler.hpp"
-#include "connectionmanager.hpp"
-
-
+#include "socket.hpp"
+#include "threadpool.hpp"
 
 class Server {
    private:
@@ -18,7 +16,7 @@ class Server {
     Socket     sock;
     ThreadPool pool;
 
-    std::string document_root; 
+    std::string document_root;
 
    public:
     Server(const ConfigParser& config);
