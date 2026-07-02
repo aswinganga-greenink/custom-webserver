@@ -54,7 +54,18 @@ void ConfigParser::load_from_stream(std::istream& stream) {
                     log_level = LogLevel::ERROR;
                 else if (value == "NONE")
                     log_level = LogLevel::NONE;
+                    
             }
+            else if( key == "proxy_route"){
+                proxy_route = value;
+            }
+            else if( key == "proxy_target_ip"){
+                proxy_target_ip = value;
+            }
+            else if( key == "proxy_target_port"){
+                proxy_target_port = std::stoi(value);
+            }
+
         }
     }
 }

@@ -1,5 +1,6 @@
 #include "httphandler.hpp"
 
+#include <errno.h>
 #include <unistd.h>
 
 #include <filesystem>
@@ -13,15 +14,24 @@
 HttpHandler::HttpHandler(const std::string& doc_root) : document_root(doc_root) {}
 
 void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) {
-    char buffer[1024] = {0};
+    char buffer[4096];
+    std::string raw_request;
 
-    int bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
-    if (bytes_read <= 0) {
-        on_complete(false);
-        return;
+    while (true) {
+        int bytes_read = read(client_fd, buffer, sizeof(buffer));
+        if (bytes_read > 0) {
+            raw_request.append(buffer, bytes_read);
+        } else if (bytes_read == 0) {
+            break; // Client closed connection
+        } else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break; // Exhausted available data
+            }
+            LOG_ERROR("Read error on FD: " + std::to_string(client_fd));
+            on_complete(false);
+            return;
+        }
     }
-
-    std::string raw_request(buffer);
     if (raw_request.empty()) {
         on_complete(false);
         return;

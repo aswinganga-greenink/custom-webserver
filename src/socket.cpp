@@ -12,6 +12,15 @@
 
 #include "logger.hpp"
 
+Socket::Socket() {
+    this->port = 0;
+    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sock_fd == -1) {
+        LOG_ERROR("Failed to create client socket: " + std::string(strerror(errno)));
+    }
+}
+
 Socket::Socket(int port) {
     this->port = port;
     sock_fd    = socket(AF_INET, SOCK_STREAM, 0);
@@ -88,4 +97,33 @@ void Socket::set_non_blocking() {
     } else {
         LOG_INFO("Socket succesfully configured as NON-BLOCKING");
     }
+}
+
+bool Socket::connect_sock(const std::string& target_ip, int target_port) {
+    if (sock_fd == -1) return false;
+
+    struct sockaddr_in target_addr;
+    memset(&target_addr, 0, sizeof(target_addr));
+    target_addr.sin_family = AF_INET;
+    target_addr.sin_port = htons(target_port);
+
+    if (inet_pton(AF_INET, target_ip.c_str(), &target_addr.sin_addr) <= 0) {
+        LOG_ERROR("Invalid proxy target IP address: " + target_ip);
+        return false;
+    }
+
+    int res = connect(sock_fd, (struct sockaddr*)&target_addr, sizeof(target_addr));
+    
+    if (res < 0) {
+        if (errno == EINPROGRESS) {
+            LOG_DEBUG("Upstream connection to " + target_ip + " is in progress...");
+            return true; 
+        } else {
+            LOG_ERROR("Upstream connection failed immediately: " + std::string(strerror(errno)));
+            return false;
+        }
+    }
+
+    LOG_INFO("Upstream connection established instantly to " + target_ip);
+    return true;
 }

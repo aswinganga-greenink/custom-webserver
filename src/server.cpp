@@ -1,6 +1,7 @@
 #include "server.hpp"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <atomic>
@@ -70,6 +71,9 @@ void Server::start_server(std::atomic<bool>& is_running) {
                         LOG_ERROR("Accpet failed");
                         break;
                     }
+
+                    int flags = fcntl(client_fd, F_GETFL, 0);
+                    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
 
                     LOG_INFO("Client connected! FD: " + std::to_string(client_fd));
 
