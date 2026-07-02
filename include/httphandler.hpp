@@ -4,15 +4,16 @@
 
 #include "httphandler.hpp"
 #include "session.hpp"
+#include "config.hpp"
 
 class HttpHandler {
    public:
     using OnCompleteCallback = std::function<void(bool keep_alive)>;
     void process_client(Session* session, OnCompleteCallback on_complete);
-    HttpHandler(const std::string& doc_root);
+    HttpHandler(const ConfigParser& config);
 
    private:
-    std::string document_root;
+    ConfigParser config;
     std::string extract_path(const std::string& raw_request);
 
     std::string build_response(const std::string& uri, bool keep_alive);

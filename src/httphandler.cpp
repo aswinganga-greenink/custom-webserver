@@ -11,7 +11,9 @@
 #include "httprequest.hpp"
 #include "logger.hpp"
 
-HttpHandler::HttpHandler(const std::string& doc_root) : document_root(doc_root) {}
+#include "socket.hpp"
+
+HttpHandler::HttpHandler(const ConfigParser& config) : config(config) {}
 
 void HttpHandler::process_client(Session* session, OnCompleteCallback on_complete) {
     if (!session) {
@@ -58,6 +60,20 @@ void HttpHandler::process_client(Session* session, OnCompleteCallback on_complet
     
     session->request_buffer.clear();
 
+    if (!config.proxy_route.empty() && req.uri.find(config.proxy_route) == 0) {
+        LOG_INFO("Proxy route matched for URI: " + req.uri);
+        session->state = ProxyState::CONNECTING_TO_BACKEND;
+        session->original_req = req;
+        
+        Socket upstream;
+        upstream.set_non_blocking();
+        upstream.connect_sock(config.proxy_target_ip, config.proxy_target_port);
+        
+        session->upstream_fd = upstream.release_fd();
+        on_complete(true);
+        return;
+    }
+
     LOG_INFO("Parsed " + req.method + " request for " + req.uri);
 
     bool keep_alive = false;
@@ -76,9 +92,9 @@ std::string HttpHandler::build_response(const std::string& uri, bool keep_alive)
     std::filesystem::path base_dir;
 
     try {
-        base_dir = std::filesystem::canonical(document_root);
+        base_dir = std::filesystem::canonical(config.document_root);
     } catch (const std::exception& e) {
-        LOG_ERROR("CRITICAL: Document root directory : " + document_root + "directory is missing!");
+        LOG_ERROR("CRITICAL: Document root directory : " + config.document_root + "directory is missing!");
         return "HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n";
     }
 

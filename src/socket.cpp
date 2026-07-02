@@ -45,6 +45,12 @@ Socket::Socket(Socket&& other) {
     other.port    = 0;
 }
 
+int Socket::release_fd() {
+    int fd = sock_fd;
+    sock_fd = -1;
+    return fd;
+}
+
 Socket::~Socket() {
     if (sock_fd != -1) {
         close(sock_fd);

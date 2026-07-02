@@ -55,6 +55,17 @@ Session* ConnectionManager::get_session(int fd) {
     return nullptr;
 }
 
+Session* ConnectionManager::get_session_by_upstream(int upstream_fd) {
+    std::lock_guard<std::mutex> lock(manager_mutex);
+    if (upstream_to_client.count(upstream_fd)) {
+        int client_fd = upstream_to_client[upstream_fd];
+        if (sessions.count(client_fd)) {
+            return sessions[client_fd].get();
+        }
+    }
+    return nullptr;
+}
+
 void ConnectionManager::add_session(int fd) {
     std::lock_guard<std::mutex> lock(manager_mutex);
     auto s = std::make_unique<Session>();
@@ -62,8 +73,19 @@ void ConnectionManager::add_session(int fd) {
     sessions[fd] = std::move(s);
 }
 
+void ConnectionManager::map_upstream(int client_fd, int upstream_fd) {
+    std::lock_guard<std::mutex> lock(manager_mutex);
+    upstream_to_client[upstream_fd] = client_fd;
+}
+
 void ConnectionManager::remove_session(int fd) {
     std::lock_guard<std::mutex> lock(manager_mutex);
-    sessions.erase(fd);
+    if (sessions.count(fd)) {
+        int upstream_fd = sessions[fd]->upstream_fd;
+        if (upstream_fd != -1) {
+            upstream_to_client.erase(upstream_fd);
+        }
+        sessions.erase(fd);
+    }
     active_connections.erase(fd);
 }

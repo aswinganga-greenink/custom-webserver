@@ -19,7 +19,7 @@ Server::Server(const ConfigParser& config)
     : port(config.port),
       sock(config.port),
       pool(config.worker_threads),
-      document_root(config.document_root) {}
+      config(config) {}
 
 Server::~Server() { LOG_INFO("Have a nice day"); }
 
@@ -89,13 +89,17 @@ void Server::start_server(std::atomic<bool>& is_running) {
             else {
                 pool.enqueue_task([current_fd, &event_loop, &connection_manager, this]() {
                     LOG_INFO("Worker thread processing client fd: " + std::to_string(current_fd));
-                    HttpHandler handler(this->document_root);
+                    HttpHandler handler(this->config);
                     
                     Session* session = connection_manager.get_session(current_fd);
 
-                    handler.process_client(session, [current_fd, &event_loop,
+                    handler.process_client(session, [current_fd, session, &event_loop,
                                                         &connection_manager](bool keep_alive) {
-                        if (keep_alive) {
+                        if (session && session->state == ProxyState::CONNECTING_TO_BACKEND) {
+                            connection_manager.map_upstream(current_fd, session->upstream_fd);
+                            connection_manager.add_or_update_timer(current_fd);
+                            event_loop.add_socket(session->upstream_fd, EPOLLOUT | EPOLLONESHOT);
+                        } else if (keep_alive) {
                             connection_manager.add_or_update_timer(current_fd);
                             event_loop.modify_socket(current_fd, EPOLLIN | EPOLLONESHOT);
                         } else {

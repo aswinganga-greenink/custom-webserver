@@ -16,7 +16,7 @@ class Server {
     Socket     sock;
     ThreadPool pool;
 
-    std::string document_root;
+    ConfigParser config;
 
    public:
     Server(const ConfigParser& config);

@@ -20,6 +20,7 @@ class Socket {
     Socket(const Socket&) = delete;
 
     int  get_fd() const { return sock_fd; }
+    int  release_fd();
     void set_content();
     void bind_sock();
     void listen_sock();
