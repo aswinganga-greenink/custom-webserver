@@ -10,6 +10,7 @@ class HttpHandler {
    public:
     using OnCompleteCallback = std::function<void(bool keep_alive)>;
     void process_client(Session* session, OnCompleteCallback on_complete);
+    void process_proxy(Session* session, int ready_fd, OnCompleteCallback on_complete);
     HttpHandler(const ConfigParser& config);
 
    private:

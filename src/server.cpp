@@ -88,27 +88,65 @@ void Server::start_server(std::atomic<bool>& is_running) {
 
             else {
                 pool.enqueue_task([current_fd, &event_loop, &connection_manager, this]() {
-                    LOG_INFO("Worker thread processing client fd: " + std::to_string(current_fd));
+                    LOG_INFO("Worker thread processing fd: " + std::to_string(current_fd));
                     HttpHandler handler(this->config);
                     
+                    bool is_upstream = false;
                     Session* session = connection_manager.get_session(current_fd);
+                    if (!session) {
+                        session = connection_manager.get_session_by_upstream(current_fd);
+                        if (session) {
+                            is_upstream = true;
+                        }
+                    }
 
-                    handler.process_client(session, [current_fd, session, &event_loop,
-                                                        &connection_manager](bool keep_alive) {
-                        if (session && session->state == ProxyState::CONNECTING_TO_BACKEND) {
+                    if (!session) {
+                        LOG_WARN("Session not found for fd " + std::to_string(current_fd));
+                        close(current_fd);
+                        return;
+                    }
+
+                    auto callback = [current_fd, session, is_upstream, &event_loop, &connection_manager](bool keep_alive) {
+                        if (session && session->state == ProxyState::CONNECTING_TO_BACKEND && !is_upstream) {
                             connection_manager.map_upstream(current_fd, session->upstream_fd);
                             connection_manager.add_or_update_timer(current_fd);
                             event_loop.add_socket(session->upstream_fd, EPOLLOUT | EPOLLONESHOT);
-                        } else if (keep_alive) {
+                        } else if (session && session->state == ProxyState::READING_FROM_BACKEND && is_upstream) {
+                            if (keep_alive) {
+                                connection_manager.add_or_update_timer(session->client_fd);
+                                event_loop.modify_socket(session->upstream_fd, EPOLLIN | EPOLLONESHOT);
+                            } else {
+                                int c_fd = session->client_fd;
+                                int u_fd = session->upstream_fd;
+                                connection_manager.remove_timer(c_fd);
+                                connection_manager.remove_session(c_fd);
+                                event_loop.remove_socket(c_fd);
+                                event_loop.remove_socket(u_fd);
+                                close(c_fd);
+                                close(u_fd);
+                            }
+                        } else if (keep_alive && !is_upstream) {
                             connection_manager.add_or_update_timer(current_fd);
                             event_loop.modify_socket(current_fd, EPOLLIN | EPOLLONESHOT);
                         } else {
-                            connection_manager.remove_timer(current_fd);
-                            connection_manager.remove_session(current_fd);
-                            event_loop.remove_socket(current_fd);
-                            close(current_fd);
+                            int c_fd = session->client_fd;
+                            int u_fd = session->upstream_fd;
+                            connection_manager.remove_timer(c_fd);
+                            connection_manager.remove_session(c_fd);
+                            event_loop.remove_socket(c_fd);
+                            close(c_fd);
+                            if (u_fd != -1) {
+                                event_loop.remove_socket(u_fd);
+                                close(u_fd);
+                            }
                         }
-                    });
+                    };
+
+                    if (is_upstream) {
+                        handler.process_proxy(session, current_fd, callback);
+                    } else {
+                        handler.process_client(session, callback);
+                    }
                 });
             }
         }

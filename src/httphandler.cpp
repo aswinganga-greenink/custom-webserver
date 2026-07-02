@@ -180,3 +180,51 @@ std::string HttpHandler::get_mime_type(const std::string& filepath) {
 
     return "application/octet-stream";
 }
+
+void HttpHandler::process_proxy(Session* session, int ready_fd, OnCompleteCallback on_complete) {
+    if (!session) {
+        on_complete(false);
+        return;
+    }
+
+    if (session->state == ProxyState::CONNECTING_TO_BACKEND) {
+        int bytes_written = write(session->upstream_fd, session->request_buffer.c_str(), session->request_buffer.size());
+        if (bytes_written < 0) {
+            LOG_ERROR("Failed to write to upstream socket on FD: " + std::to_string(session->upstream_fd));
+            on_complete(false);
+            return;
+        }
+        
+        session->request_buffer.erase(0, bytes_written);
+        if (session->request_buffer.empty()) {
+            session->state = ProxyState::READING_FROM_BACKEND;
+        }
+        
+        on_complete(true); 
+    } else if (session->state == ProxyState::READING_FROM_BACKEND) {
+        char buffer[4096];
+        while (true) {
+            int bytes_read = read(session->upstream_fd, buffer, sizeof(buffer));
+            if (bytes_read > 0) {
+                int w = write(session->client_fd, buffer, bytes_read);
+                if (w < 0) {
+                    LOG_ERROR("Failed to stream to client FD: " + std::to_string(session->client_fd));
+                    on_complete(false);
+                    return;
+                }
+            } else if (bytes_read == 0) {
+                session->state = ProxyState::COMPLETED;
+                on_complete(false); // Finished proxying
+                return;
+            } else {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    break;
+                }
+                LOG_ERROR("Upstream read error on FD: " + std::to_string(session->upstream_fd));
+                on_complete(false);
+                return;
+            }
+        }
+        on_complete(true);
+    }
+}
