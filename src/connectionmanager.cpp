@@ -68,9 +68,9 @@ Session* ConnectionManager::get_session_by_upstream(int upstream_fd) {
 
 void ConnectionManager::add_session(int fd) {
     std::lock_guard<std::mutex> lock(manager_mutex);
-    auto s = std::make_unique<Session>();
-    s->client_fd = fd;
-    sessions[fd] = std::move(s);
+    auto                        s = std::make_unique<Session>();
+    s->client_fd                  = fd;
+    sessions[fd]                  = std::move(s);
 }
 
 void ConnectionManager::map_upstream(int client_fd, int upstream_fd) {

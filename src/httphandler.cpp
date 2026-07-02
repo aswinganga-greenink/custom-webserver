@@ -10,7 +10,6 @@
 
 #include "httprequest.hpp"
 #include "logger.hpp"
-
 #include "socket.hpp"
 
 HttpHandler::HttpHandler(const ConfigParser& config) : config(config) {}
@@ -20,8 +19,8 @@ void HttpHandler::process_client(Session* session, OnCompleteCallback on_complet
         on_complete(false);
         return;
     }
-    
-    int client_fd = session->client_fd;
+
+    int  client_fd = session->client_fd;
     char buffer[4096];
 
     while (true) {
@@ -29,17 +28,17 @@ void HttpHandler::process_client(Session* session, OnCompleteCallback on_complet
         if (bytes_read > 0) {
             session->request_buffer.append(buffer, bytes_read);
         } else if (bytes_read == 0) {
-            break; // Client closed connection
+            break;  // Client closed connection
         } else {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                break; // Exhausted available data
+                break;  // Exhausted available data
             }
             LOG_ERROR("Read error on FD: " + std::to_string(client_fd));
             on_complete(false);
             return;
         }
     }
-    
+
     if (session->request_buffer.empty()) {
         on_complete(false);
         return;
@@ -57,16 +56,16 @@ void HttpHandler::process_client(Session* session, OnCompleteCallback on_complet
         on_complete(false);
         return;
     }
-    
+
     if (!config.proxy_route.empty() && req.uri.find(config.proxy_route) == 0) {
         LOG_INFO("Proxy route matched for URI: " + req.uri);
-        session->state = ProxyState::CONNECTING_TO_BACKEND;
+        session->state        = ProxyState::CONNECTING_TO_BACKEND;
         session->original_req = req;
-        
+
         Socket upstream;
         upstream.set_non_blocking();
         upstream.connect_sock(config.proxy_target_ip, config.proxy_target_port);
-        
+
         session->upstream_fd = upstream.release_fd();
         on_complete(true);
         return;
@@ -93,7 +92,8 @@ std::string HttpHandler::build_response(const std::string& uri, bool keep_alive)
     try {
         base_dir = std::filesystem::canonical(config.document_root);
     } catch (const std::exception& e) {
-        LOG_ERROR("CRITICAL: Document root directory : " + config.document_root + "directory is missing!");
+        LOG_ERROR("CRITICAL: Document root directory : " + config.document_root +
+                  "directory is missing!");
         return "HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n";
     }
 
@@ -187,19 +187,21 @@ void HttpHandler::process_proxy(Session* session, int ready_fd, OnCompleteCallba
     }
 
     if (session->state == ProxyState::CONNECTING_TO_BACKEND) {
-        int bytes_written = write(session->upstream_fd, session->request_buffer.c_str(), session->request_buffer.size());
+        int bytes_written = write(session->upstream_fd, session->request_buffer.c_str(),
+                                  session->request_buffer.size());
         if (bytes_written < 0) {
-            LOG_ERROR("Failed to write to upstream socket on FD: " + std::to_string(session->upstream_fd));
+            LOG_ERROR("Failed to write to upstream socket on FD: " +
+                      std::to_string(session->upstream_fd));
             on_complete(false);
             return;
         }
-        
+
         session->request_buffer.erase(0, bytes_written);
         if (session->request_buffer.empty()) {
             session->state = ProxyState::READING_FROM_BACKEND;
         }
-        
-        on_complete(true); 
+
+        on_complete(true);
     } else if (session->state == ProxyState::READING_FROM_BACKEND) {
         char buffer[4096];
         while (true) {
@@ -207,13 +209,14 @@ void HttpHandler::process_proxy(Session* session, int ready_fd, OnCompleteCallba
             if (bytes_read > 0) {
                 int w = write(session->client_fd, buffer, bytes_read);
                 if (w < 0) {
-                    LOG_ERROR("Failed to stream to client FD: " + std::to_string(session->client_fd));
+                    LOG_ERROR("Failed to stream to client FD: " +
+                              std::to_string(session->client_fd));
                     on_complete(false);
                     return;
                 }
             } else if (bytes_read == 0) {
                 session->state = ProxyState::COMPLETED;
-                on_complete(false); // Finished proxying
+                on_complete(false);  // Finished proxying
                 return;
             } else {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {

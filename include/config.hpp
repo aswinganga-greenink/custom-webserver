@@ -11,9 +11,9 @@ class ConfigParser {
     std::string document_root  = "/public";
     LogLevel    log_level      = LogLevel::INFO;
 
-    std::string proxy_route = "";
-    std::string proxy_target_ip = "";
-    int proxy_target_port = 0;
+    std::string proxy_route       = "";
+    std::string proxy_target_ip   = "";
+    int         proxy_target_port = 0;
 
     void load_from_stream(std::istream& stream);
     bool load_from_file(const std::string& filename);

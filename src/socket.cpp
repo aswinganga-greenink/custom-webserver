@@ -24,7 +24,7 @@ Socket::Socket(Socket&& other) {
 }
 
 int Socket::release_fd() {
-    int fd = sock_fd;
+    int fd  = sock_fd;
     sock_fd = -1;
     return fd;
 }
@@ -38,12 +38,12 @@ Socket::~Socket() {
 void Socket::bind_sock() {
     struct addrinfo hints, *res, *p;
     memset(&hints, 0, sizeof hints);
-    hints.ai_family   = AF_UNSPEC; // IPv4 or IPv6
+    hints.ai_family   = AF_UNSPEC;  // IPv4 or IPv6
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags    = AI_PASSIVE; // For binding
+    hints.ai_flags    = AI_PASSIVE;  // For binding
 
     std::string port_str = std::to_string(port);
-    int status = getaddrinfo(NULL, port_str.c_str(), &hints, &res);
+    int         status   = getaddrinfo(NULL, port_str.c_str(), &hints, &res);
     if (status != 0) {
         LOG_ERROR("getaddrinfo error: " + std::string(gai_strerror(status)));
         exit(EXIT_FAILURE);
@@ -55,14 +55,14 @@ void Socket::bind_sock() {
 
         int opt = 1;
         setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        
+
         if (is_non_blocking_flag) {
             int flags = fcntl(sock_fd, F_GETFL, 0);
             if (flags != -1) fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
         }
 
         if (bind(sock_fd, p->ai_addr, p->ai_addrlen) == 0) {
-            break; // Successfully bound
+            break;  // Successfully bound
         }
 
         close(sock_fd);
@@ -90,7 +90,7 @@ void Socket::listen_sock() {
 
 int Socket::accept_sock() {
     struct sockaddr_storage client_addr;
-    socklen_t client_size = sizeof(client_addr);
+    socklen_t               client_size = sizeof(client_addr);
     int client_fd = accept(sock_fd, (struct sockaddr*)&client_addr, &client_size);
     return client_fd;
 }
@@ -121,7 +121,7 @@ bool Socket::connect_sock(const std::string& target_ip, int target_port) {
     hints.ai_socktype = SOCK_STREAM;
 
     std::string port_str = std::to_string(target_port);
-    int status = getaddrinfo(target_ip.c_str(), port_str.c_str(), &hints, &res);
+    int         status   = getaddrinfo(target_ip.c_str(), port_str.c_str(), &hints, &res);
     if (status != 0) {
         LOG_ERROR("getaddrinfo error for proxy target: " + std::string(gai_strerror(status)));
         return false;
@@ -151,7 +151,7 @@ bool Socket::connect_sock(const std::string& target_ip, int target_port) {
             break;
         }
     }
-    
+
     freeaddrinfo(res);
     return connected;
 }

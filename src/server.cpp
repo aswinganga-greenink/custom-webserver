@@ -16,10 +16,7 @@
 #include "socket.hpp"
 
 Server::Server(const ConfigParser& config)
-    : port(config.port),
-      sock(config.port),
-      pool(config.worker_threads),
-      config(config) {}
+    : port(config.port), sock(config.port), pool(config.worker_threads), config(config) {}
 
 Server::~Server() { LOG_INFO("Have a nice day"); }
 
@@ -90,9 +87,9 @@ void Server::start_server(std::atomic<bool>& is_running) {
                 pool.enqueue_task([current_fd, &event_loop, &connection_manager, this]() {
                     LOG_INFO("Worker thread processing fd: " + std::to_string(current_fd));
                     HttpHandler handler(this->config);
-                    
-                    bool is_upstream = false;
-                    Session* session = connection_manager.get_session(current_fd);
+
+                    bool     is_upstream = false;
+                    Session* session     = connection_manager.get_session(current_fd);
                     if (!session) {
                         session = connection_manager.get_session_by_upstream(current_fd);
                         if (session) {
@@ -106,15 +103,19 @@ void Server::start_server(std::atomic<bool>& is_running) {
                         return;
                     }
 
-                    auto callback = [current_fd, session, is_upstream, &event_loop, &connection_manager](bool keep_alive) {
-                        if (session && session->state == ProxyState::CONNECTING_TO_BACKEND && !is_upstream) {
+                    auto callback = [current_fd, session, is_upstream, &event_loop,
+                                     &connection_manager](bool keep_alive) {
+                        if (session && session->state == ProxyState::CONNECTING_TO_BACKEND &&
+                            !is_upstream) {
                             connection_manager.map_upstream(current_fd, session->upstream_fd);
                             connection_manager.add_or_update_timer(current_fd);
                             event_loop.add_socket(session->upstream_fd, EPOLLOUT | EPOLLONESHOT);
-                        } else if (session && session->state == ProxyState::READING_FROM_BACKEND && is_upstream) {
+                        } else if (session && session->state == ProxyState::READING_FROM_BACKEND &&
+                                   is_upstream) {
                             if (keep_alive) {
                                 connection_manager.add_or_update_timer(session->client_fd);
-                                event_loop.modify_socket(session->upstream_fd, EPOLLIN | EPOLLONESHOT);
+                                event_loop.modify_socket(session->upstream_fd,
+                                                         EPOLLIN | EPOLLONESHOT);
                             } else {
                                 int c_fd = session->client_fd;
                                 int u_fd = session->upstream_fd;

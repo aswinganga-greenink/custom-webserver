@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+
 #include "httprequest.hpp"
 
 enum class ProxyState {
@@ -12,7 +13,7 @@ enum class ProxyState {
 };
 
 struct Session {
-    int client_fd = -1;
+    int client_fd   = -1;
     int upstream_fd = -1;
 
     ProxyState state = ProxyState::NONE;
