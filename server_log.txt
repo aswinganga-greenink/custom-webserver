@@ -1,0 +1,19 @@
+[32m[2026-07-02 20:45:54] [INFO] [0mBooting up the server...
+[32m[2026-07-02 20:45:54] [INFO] [0mConfiguration loaded successfully from server.conf
+[32m[2026-07-02 20:45:54] [INFO] [0mTelemetry engine calibrated. Current Log Level: DEBUG
+[32m[2026-07-02 20:45:54] [INFO] [0mStarting server on port: 8080
+[32m[2026-07-02 20:45:54] [INFO] [0mSuccessfully bound to port 8080
+[32m[2026-07-02 20:45:54] [INFO] [0mSocket is actively listening...
+[32m[2026-07-02 20:45:54] [INFO] [0mSocket succesfully configured as NON-BLOCKING
+[32m[2026-07-02 20:45:54] [INFO] [0mServer is now running and waiting for connection.
+[32m[2026-07-02 20:45:54] [INFO] [0mEpoll instance created successfully, FD : 12
+[32m[2026-07-02 20:45:55] [INFO] [0mClient connected! FD: 16
+[32m[2026-07-02 20:45:55] [INFO] [0mWorker thread processing fd: 16
+[32m[2026-07-02 20:45:55] [INFO] [0mProxy route matched for URI: /api/test
+[36m[2026-07-02 20:45:55] [DEBUG] [0mUpstream connection in progress to 127.0.0.1
+[32m[2026-07-02 20:45:55] [INFO] [0mWorker thread processing fd: 21
+[32m[2026-07-02 20:45:55] [INFO] [0mWorker thread processing fd: 21
+[33m[2026-07-02 20:45:56] [WARN] [0mCaught system signal. Initiating shutdown...
+[32m[2026-07-02 20:45:56] [INFO] [0mEpoll instance safely destroyed
+[32m[2026-07-02 20:45:56] [INFO] [0mServer safely powered down. Goodbye!
+[32m[2026-07-02 20:45:56] [INFO] [0mHave a nice day

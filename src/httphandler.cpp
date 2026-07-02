@@ -58,8 +58,6 @@ void HttpHandler::process_client(Session* session, OnCompleteCallback on_complet
         return;
     }
     
-    session->request_buffer.clear();
-
     if (!config.proxy_route.empty() && req.uri.find(config.proxy_route) == 0) {
         LOG_INFO("Proxy route matched for URI: " + req.uri);
         session->state = ProxyState::CONNECTING_TO_BACKEND;
@@ -74,6 +72,7 @@ void HttpHandler::process_client(Session* session, OnCompleteCallback on_complet
         return;
     }
 
+    session->request_buffer.clear();
     LOG_INFO("Parsed " + req.method + " request for " + req.uri);
 
     bool keep_alive = false;
