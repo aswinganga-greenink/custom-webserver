@@ -12,31 +12,9 @@
 
 #include "logger.hpp"
 
-Socket::Socket() {
-    this->port = 0;
-    sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+Socket::Socket() : port(0), sock_fd(-1) {}
 
-    if (sock_fd == -1) {
-        LOG_ERROR("Failed to create client socket: " + std::string(strerror(errno)));
-    }
-}
-
-Socket::Socket(int port) {
-    this->port = port;
-    sock_fd    = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (sock_fd == -1) {
-        LOG_ERROR("Failed to create socket: " + std::string(strerror(errno)));
-        return;
-    }
-
-    int opt = 1;
-    if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-        LOG_ERROR("setsockopt SO_REUSEADDR failed: " + std::string(strerror(errno)));
-    } else {
-        LOG_DEBUG("SO_REUSEADDR successfully applied to FD " + std::to_string(sock_fd));
-    }
-}
+Socket::Socket(int port) : port(port), sock_fd(-1) {}
 
 Socket::Socket(Socket&& other) {
     this->port    = other.port;
@@ -57,20 +35,47 @@ Socket::~Socket() {
     }
 }
 
-void Socket::set_content() {
-    server.sin_addr.s_addr = htonl(INADDR_ANY);
-    server.sin_port        = htons(port);
-    server.sin_family      = AF_INET;
-}
-
 void Socket::bind_sock() {
-    set_content();
+    struct addrinfo hints, *res, *p;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family   = AF_UNSPEC; // IPv4 or IPv6
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags    = AI_PASSIVE; // For binding
 
-    if (bind(sock_fd, (struct sockaddr*)&server, sizeof(server)) < 0) {
-        LOG_ERROR("CRITICAL ERROR: Failed to bind to port " + std::to_string(port) + "!");
-        LOG_ERROR("OS Reason: " + std::string(strerror(errno)));
+    std::string port_str = std::to_string(port);
+    int status = getaddrinfo(NULL, port_str.c_str(), &hints, &res);
+    if (status != 0) {
+        LOG_ERROR("getaddrinfo error: " + std::string(gai_strerror(status)));
         exit(EXIT_FAILURE);
     }
+
+    for (p = res; p != NULL; p = p->ai_next) {
+        sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sock_fd == -1) continue;
+
+        int opt = 1;
+        setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+        
+        if (is_non_blocking_flag) {
+            int flags = fcntl(sock_fd, F_GETFL, 0);
+            if (flags != -1) fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
+        }
+
+        if (bind(sock_fd, p->ai_addr, p->ai_addrlen) == 0) {
+            break; // Successfully bound
+        }
+
+        close(sock_fd);
+        sock_fd = -1;
+    }
+
+    freeaddrinfo(res);
+
+    if (p == NULL) {
+        LOG_ERROR("CRITICAL ERROR: Failed to bind to port " + std::to_string(port));
+        exit(EXIT_FAILURE);
+    }
+
     LOG_INFO("Successfully bound to port " + std::to_string(port));
 }
 
@@ -84,12 +89,16 @@ void Socket::listen_sock() {
 }
 
 int Socket::accept_sock() {
-    socklen_t client_size = sizeof(client);
-    int       client_fd   = accept(sock_fd, (struct sockaddr*)&client, &client_size);
+    struct sockaddr_storage client_addr;
+    socklen_t client_size = sizeof(client_addr);
+    int client_fd = accept(sock_fd, (struct sockaddr*)&client_addr, &client_size);
     return client_fd;
 }
 
 void Socket::set_non_blocking() {
+    is_non_blocking_flag = true;
+    if (sock_fd == -1) return;
+
     int flags = fcntl(sock_fd, F_GETFL, 0);
     if (flags == -1) {
         LOG_ERROR("Failed to get socket flags");
@@ -106,30 +115,43 @@ void Socket::set_non_blocking() {
 }
 
 bool Socket::connect_sock(const std::string& target_ip, int target_port) {
-    if (sock_fd == -1) return false;
+    struct addrinfo hints, *res, *p;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
 
-    struct sockaddr_in target_addr;
-    memset(&target_addr, 0, sizeof(target_addr));
-    target_addr.sin_family = AF_INET;
-    target_addr.sin_port = htons(target_port);
-
-    if (inet_pton(AF_INET, target_ip.c_str(), &target_addr.sin_addr) <= 0) {
-        LOG_ERROR("Invalid proxy target IP address: " + target_ip);
+    std::string port_str = std::to_string(target_port);
+    int status = getaddrinfo(target_ip.c_str(), port_str.c_str(), &hints, &res);
+    if (status != 0) {
+        LOG_ERROR("getaddrinfo error for proxy target: " + std::string(gai_strerror(status)));
         return false;
     }
 
-    int res = connect(sock_fd, (struct sockaddr*)&target_addr, sizeof(target_addr));
-    
-    if (res < 0) {
-        if (errno == EINPROGRESS) {
-            LOG_DEBUG("Upstream connection to " + target_ip + " is in progress...");
-            return true; 
+    bool connected = false;
+    for (p = res; p != NULL; p = p->ai_next) {
+        sock_fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (sock_fd == -1) continue;
+
+        if (is_non_blocking_flag) {
+            int flags = fcntl(sock_fd, F_GETFL, 0);
+            if (flags != -1) fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
+        }
+
+        if (connect(sock_fd, p->ai_addr, p->ai_addrlen) == -1) {
+            if (errno == EINPROGRESS || errno == EWOULDBLOCK) {
+                connected = true;
+                LOG_DEBUG("Upstream connection in progress to " + target_ip);
+                break;
+            }
+            close(sock_fd);
+            sock_fd = -1;
         } else {
-            LOG_ERROR("Upstream connection failed immediately: " + std::string(strerror(errno)));
-            return false;
+            connected = true;
+            LOG_INFO("Upstream connection established instantly to " + target_ip);
+            break;
         }
     }
-
-    LOG_INFO("Upstream connection established instantly to " + target_ip);
-    return true;
+    
+    freeaddrinfo(res);
+    return connected;
 }

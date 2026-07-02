@@ -14,7 +14,7 @@ void handle_signal(int signum) {
     server_running.store(false);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     Logger::set_level(LogLevel::INFO);
 
     struct sigaction sa;
@@ -26,7 +26,8 @@ int main() {
     LOG_INFO("Booting up the server...");
 
     ConfigParser config;
-    if (!config.load_from_file("server.conf")) {
+    std::string config_file = (argc > 1) ? argv[1] : "server.conf";
+    if (!config.load_from_file(config_file)) {
         LOG_WARN("Falling back to default compiled architecture.");
     }
 

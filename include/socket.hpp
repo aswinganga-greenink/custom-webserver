@@ -4,13 +4,15 @@
 #include <sys/socket.h>
 #include <string>
 
+#include <netdb.h>
+
 class Socket {
    private:
     int port;
     int sock_fd;
+    bool is_non_blocking_flag = false;
 
    public:
-    struct sockaddr_in server, client;
 
     Socket(int port);
     Socket(); 
@@ -21,7 +23,6 @@ class Socket {
 
     int  get_fd() const { return sock_fd; }
     int  release_fd();
-    void set_content();
     void bind_sock();
     void listen_sock();
     int  accept_sock();
