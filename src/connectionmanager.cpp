@@ -35,6 +35,7 @@ void ConnectionManager::close_expired_connections(Epoll& epoll_engine) {
             epoll_engine.remove_socket(top.fd);
             close(top.fd);
             active_connections.erase(top.fd);
+            sessions.erase(top.fd);
         }
 
         timer_queue.pop();
@@ -43,5 +44,26 @@ void ConnectionManager::close_expired_connections(Epoll& epoll_engine) {
 
 void ConnectionManager::remove_timer(int fd) {
     std::lock_guard<std::mutex> lock(manager_mutex);
+    active_connections.erase(fd);
+}
+
+Session* ConnectionManager::get_session(int fd) {
+    std::lock_guard<std::mutex> lock(manager_mutex);
+    if (sessions.count(fd)) {
+        return sessions[fd].get();
+    }
+    return nullptr;
+}
+
+void ConnectionManager::add_session(int fd) {
+    std::lock_guard<std::mutex> lock(manager_mutex);
+    auto s = std::make_unique<Session>();
+    s->client_fd = fd;
+    sessions[fd] = std::move(s);
+}
+
+void ConnectionManager::remove_session(int fd) {
+    std::lock_guard<std::mutex> lock(manager_mutex);
+    sessions.erase(fd);
     active_connections.erase(fd);
 }

@@ -5,6 +5,8 @@
 #include <unordered_map>
 
 #include "epoll.hpp"
+#include "session.hpp"
+#include <memory>
 
 struct TimerNode {
     int    fd;
@@ -17,6 +19,7 @@ class ConnectionManager {
    private:
     std::priority_queue<TimerNode, std::vector<TimerNode>, std::greater<TimerNode>> timer_queue;
     std::unordered_map<int, size_t> active_connections;
+    std::unordered_map<int, std::unique_ptr<Session>> sessions;
     std::mutex                      manager_mutex;
     size_t                          get_current_time_ms();
 
@@ -24,4 +27,8 @@ class ConnectionManager {
     void add_or_update_timer(int fd, size_t timeout_ms = 5000);
     void close_expired_connections(Epoll& epoll_engine);
     void remove_timer(int fd);
+    
+    Session* get_session(int fd);
+    void add_session(int fd);
+    void remove_session(int fd);
 };

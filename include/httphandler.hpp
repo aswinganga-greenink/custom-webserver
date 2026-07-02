@@ -3,11 +3,12 @@
 #include <string>
 
 #include "httphandler.hpp"
+#include "session.hpp"
 
 class HttpHandler {
    public:
     using OnCompleteCallback = std::function<void(bool keep_alive)>;
-    void process_client(int client_fd, OnCompleteCallback on_complete);
+    void process_client(Session* session, OnCompleteCallback on_complete);
     HttpHandler(const std::string& doc_root);
 
    private:

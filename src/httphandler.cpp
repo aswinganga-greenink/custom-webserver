@@ -13,14 +13,19 @@
 
 HttpHandler::HttpHandler(const std::string& doc_root) : document_root(doc_root) {}
 
-void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) {
+void HttpHandler::process_client(Session* session, OnCompleteCallback on_complete) {
+    if (!session) {
+        on_complete(false);
+        return;
+    }
+    
+    int client_fd = session->client_fd;
     char buffer[4096];
-    std::string raw_request;
 
     while (true) {
         int bytes_read = read(client_fd, buffer, sizeof(buffer));
         if (bytes_read > 0) {
-            raw_request.append(buffer, bytes_read);
+            session->request_buffer.append(buffer, bytes_read);
         } else if (bytes_read == 0) {
             break; // Client closed connection
         } else {
@@ -32,17 +37,26 @@ void HttpHandler::process_client(int client_fd, OnCompleteCallback on_complete) 
             return;
         }
     }
-    if (raw_request.empty()) {
+    
+    if (session->request_buffer.empty()) {
         on_complete(false);
         return;
     }
 
+    if (session->request_buffer.find("\r\n\r\n") == std::string::npos) {
+        // Request not complete, keep alive to get more data
+        on_complete(true);
+        return;
+    }
+
     HttpRequest req;
-    if (!req.parse(raw_request)) {
+    if (!req.parse(session->request_buffer)) {
         LOG_WARN("Recieved malinformed HTTP request. Dropping connection.");
         on_complete(false);
         return;
     }
+    
+    session->request_buffer.clear();
 
     LOG_INFO("Parsed " + req.method + " request for " + req.uri);
 

@@ -3,6 +3,7 @@
 #include "httprequest.hpp"
 
 enum class ProxyState {
+    NONE,
     CONNECTING_TO_BACKEND,
     FORWARDING_REQUEST,
     READING_FROM_BACKEND,
@@ -11,10 +12,10 @@ enum class ProxyState {
 };
 
 struct Session {
-    int client_fd;
-    int upstream_fd;
+    int client_fd = -1;
+    int upstream_fd = -1;
 
-    ProxyState state;
+    ProxyState state = ProxyState::NONE;
 
     HttpRequest original_req;
 
